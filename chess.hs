@@ -1,14 +1,37 @@
 import Data.Char
+import Data.Array
 
 data Pos = Pos (Int, Int)
-data PieceType = P | N | B | R | Q | K
+data PieceType = P | N | B | R | Q | K deriving (Eq, Ord)
 data Side = White | Black
 data Piece = Piece (Side, PieceType, Pos) -- record syntax?
 data Board = Board [Piece]
 
+-- instance Show Board where
+showBoard (Board ps) = 
+    let board = ar//[(getPos piece, icon piece) | piece<-ps] in
+    [[board!(y,x)|y<-[1..8]]|x<-[1..8]]
+    where 
+        ar = listArray ((1,1),(8,8)) $ cycle "."
+        getPos (Piece (_,_,Pos pos)) = pos
+        icon (Piece (s,t,_)) = 
+            case s of 
+                White -> fst
+                Black -> snd
+            $
+            case t of
+                P -> ('♙','♟')
+                N -> ('♘','♞')
+                B -> ('♗','♝')
+                R -> ('♖','♜')
+                Q -> ('♕','♛')
+                K -> ('♔','♚')
+
 main = print "lol"
 
-setup = Board [Piece (White, P,Pos (1,1))]
+setup = Board  $
+    [Piece (White, P,Pos (x,2))|x<-[1..8]] ++
+    [Piece (Black, P,Pos (x,7))|x<-[1..8]] 
 
 --instance Read Pos where
 readPos [file,rank] = Pos (ord file - 96, digitToInt rank)
