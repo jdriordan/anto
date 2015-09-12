@@ -6,8 +6,6 @@ data Side = White | Black
 data Piece = Piece (Side, PieceType, Pos)
 data Board = Board [Piece]
 
-type Move = (Piece,Pos)
-
 main = print "lol"
 
 setup = Board [Piece (White, P,Pos (1,1))]
@@ -16,12 +14,22 @@ setup = Board [Piece (White, P,Pos (1,1))]
 readPos [file,rank] = Pos (ord file - 96, digitToInt rank)
 
 
-legal :: Move -> Bool
-legal (Piece (s, a, Pos (oldX,oldY)), Pos (newX,newY)) =
+legal :: Piece -> Pos -> Bool
+legal piece@(Piece (s, t, Pos (oldX,oldY))) pos@(Pos (newX,newY))=
     inBounds newX && inBounds newY &&
-    case a of
-        P -> oldX==newX && oldY `pm` 1==newY  
-        N -> (abs$oldX-newX, abs$oldY-newY) `elem`[(1,2),(2,1)]
+    dX+dY/=0 && -- no non-moves!
+    case t of
+        P -> dX==0 && oldY`pm`1==newY  
+        N -> (dX, dY) `elem`[(1,2),(2,1)]
+        B -> dX==dY
+        R -> dX==0 || dY==0
+        Q -> any (\t'-> legal (swap piece t') pos) [B,R]
+        K -> not (dX>1 || dY>1)
     where 
         pm = case s of White->(+); Black->(-)
-        inBounds x =  x>0 && x<9 
+        inBounds x =  x>0 && x<9
+        dX = abs $ oldX-newX
+        dY = abs $ oldY-newY
+
+swap :: Piece->PieceType->Piece
+swap (Piece (s,t,p)) t' = Piece(s,t',p)
