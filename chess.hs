@@ -1,17 +1,19 @@
 import Data.Char
 import Data.Array
+import Data.Maybe
 
 type Pos = (Int, Int) 
 data PieceType = P | N | B | R | Q | K deriving (Show, Read, Eq, Ord)
 data Side = White | Black deriving (Eq, Show)
 data Piece = Piece {side :: Side, ptype :: PieceType, pos :: Pos} deriving Show
-type Board = Array Pos Piece 
+type Board = Array Pos (Maybe Piece) 
 
 -- There's now some cponfusion between Board and [Piece]
 
 main = print "lol"
 
-setup = Board  $
+setup :: [Piece]
+setup = 
     [Piece White P (x,2)|x<-[1..8]] ++
     [Piece Black P (x,7)|x<-[1..8]] ++
     zipWith (Piece White) (map (\l->read[l]) "RNBQKBNR") [(i,1)|i<-[1..8]] ++
@@ -24,43 +26,61 @@ readPos [file,rank] = (ord file - 96, digitToInt rank)
 showPos ((x,y)) = [chr (x+96), intToDigit y]
 
 -- need to add special moves
-legal :: Piece -> Pos -> Bool
-legal piece@(Piece s t (oldX,oldY)) pos@(newX,newY)=
-    inBounds newX && inBounds newY &&
+legal :: Board -> Piece -> Pos -> Bool
+legal board piece@(Piece s t (oldX,oldY)) newPos@(newX,newY)=
+    inBounds newX && inBounds newY &&  -- don't go out of bounds
+    (null inbetweens -- can't pass through other pieces 
+        || (((pos firstHit == newPos) --unless killing
+            || t == N) && -- or a knight
+            ((side.fromJust $ (board!newPos)) /= s))) && --and you have to kill the other team
     dX+dY/=0 && -- no non-moves!
     case t of
         P -> dX==0 && oldY`pm`1==newY  
         N -> (dX, dY) `elem`[(1,2),(2,1)]
         B -> dX==dY
         R -> dX==0 || dY==0
-        Q -> any (\t'-> legal (swap piece t') pos) [B,R]
+        Q -> any (\t'-> legal board (swap piece t') newPos) [B,R]
         K -> not (dX>1 || dY>1)
     where 
         pm = case s of White->(+); Black->(-)
         inBounds x =  x>0 && x<9
         dX = abs $ oldX-newX
         dY = abs $ oldY-newY
+        inbetweens = catMaybes $ tail [board!(x,y)
+                    |x<-between oldX newX,y<-between oldY newY]
+        between a b = case compare a b of
+                        LT -> [a..b]
+                        GT -> reverse [b..a]
+                        EQ -> [a]
+        firstHit = head inbetweens
+
+
 
 move :: Board -> Piece -> Pos -> Board
--- move :: 
+move = undefined
 
 swap :: Piece->PieceType->Piece
 swap (Piece s t p) t' = Piece s t' p
 
 wholeBoard = [(x,y) | x<-[1..8], y<-[1..8]]
-possibleMoves piece = filter (legal piece) wholeBoard
+possibleMoves board piece = filter (legal board piece) wholeBoard
 
+blankBoard :: Board
+blankBoard = listArray ((1,1),(8,8)) $ repeat Nothing
 
-blankBoard = listArray ((1,1),(8,8)) $ cycle "."
-boardUpdate board update = board//[(getPos piece, icon piece) | piece<-getPieces board]
+boardUpdate :: Board -> [Piece] -> Board
+boardUpdate board update = board//[(pos piece, Just piece) | piece<-update]
 
 -- instance Show Board where
-showBoard (Board ps) = 
-
-    [[()!(y,x)|y<-[1..8]]|x<-[1..8]]
-    where 
-        getPos (Piece  _ _ pos) = pos
-        icon (Piece s t _) = 
+showBoard :: Board -> [String]
+showBoard ps =
+    [[case ps!(y,x) of 
+        Just p -> icon p
+        Nothing -> '.'
+    | y<-[1..8]]| x<-[1..8]]
+printBoard = mapM_ putStrLn . showBoard
+        
+icon (Piece s t _) = 
             case s of 
                 White -> fst
                 Black -> snd
