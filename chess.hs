@@ -16,8 +16,8 @@ setup :: [Piece]
 setup = 
     [Piece White P (x,2)|x<-[1..8]] ++
     [Piece Black P (x,7)|x<-[1..8]] ++
-    zipWith (Piece White) (map (\l->read[l]) "RNBQKBNR") [(i,1)|i<-[1..8]] ++
-    zipWith (Piece Black) (map (\l->read[l]) "RNBKQBNR") [(i,8)|i<-[1..8]]
+    zipWith (Piece White) (map (\l->read[l]) "RNBKQBNR") [(i,1)|i<-[1..8]] ++
+    zipWith (Piece Black) (map (\l->read[l]) "RNBQKBNR") [(i,8)|i<-[1..8]]
      
 --instance Read Pos where
 readPos [file,rank] = (ord file - 96, digitToInt rank)
@@ -57,7 +57,15 @@ legal board piece@(Piece s t (oldX,oldY)) newPos@(newX,newY)=
 
 
 move :: Board -> Piece -> Pos -> Board
-move = undefined
+move board piece to = 
+    if legal board piece to then
+    board//[
+        (pos piece,Nothing),
+        (to, Just $ piece {pos=to})]
+    else error "Illegal Move Bro!"
+
+getPieces :: Board -> [Piece]
+getPieces = catMaybes.elems
 
 swap :: Piece->PieceType->Piece
 swap (Piece s t p) t' = Piece s t' p
@@ -93,4 +101,4 @@ icon (Piece s t _) =
                 Q -> ('♕','♛')
                 K -> ('♔','♚')
 
-
+justMove b = let p = head$getPieces b in move b p (head $ possibleMoves b p)
