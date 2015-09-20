@@ -8,9 +8,18 @@ data Side = Black | White deriving (Eq, Show)
 data Piece = Piece {side :: Side, ptype :: PieceType, pos :: Pos} deriving Show
 type Board = Array Pos (Maybe Piece) 
 
--- There's now some cponfusion between Board and [Piece]
+main = do
+    putStrLn "Let's play a game"
+    play White startBoard
 
-main = print "lol"
+play s b = do
+    printBoard b
+    putStrLn $ show s ++ " to move."
+    let moves = getMoves b s
+    mapM_ putStrLn [show n++". "++ agnMove (moves !! n) |n<-[0..length moves-1]]
+    moveNumber <- getLine
+    let newBoard = (uncurry $ move b) (moves !! read moveNumber)
+    play (other s) newBoard
 
 setup :: [Piece]
 setup = 
@@ -19,13 +28,15 @@ setup =
     zipWith (Piece Black) (map (\l->read[l]) "RNBKQBNR") [(i,1)|i<-[1..8]] ++
     zipWith (Piece White) (map (\l->read[l]) "RNBQKBNR") [(i,8)|i<-[1..8]]
 
-b = boardUpdate blankBoard setup
+startBoard = boardUpdate blankBoard setup
      
 --instance Read Pos where
 readPos [file,rank] = (ord file - 96, digitToInt rank)
 
 --instance Show Pos where
 showPos ((x,y)) = [chr (x+96), intToDigit y]
+
+agnMove (Piece _ t _, pos) = (if t==P then "" else show t) ++ showPos pos
 
 -- need to add special moves
 legal :: Board -> Piece -> Pos -> Bool
@@ -96,7 +107,10 @@ showBoard ps =
         Just p -> icon p
         Nothing -> '.'
     | y<-[1..8]]| x<-[1..8]]
-printBoard = mapM_ putStrLn . showBoard
+
+printBoard b = do
+    putStrLn $ ' ':['a'..'h']
+    mapM_ putStrLn $ zipWith (:) ['8','7'..] $showBoard b
         
 icon (Piece s t _) = 
             case s of 
@@ -116,8 +130,15 @@ justMove b =
            $ getPieces b
 
 getMoves b s =
-        concatMap (\x-> zip (repeat x) $ possibleMoves b x) $ filter (\x-> side x == s) $ getPieces b
+        concatMap (\x-> zip (repeat x) $ possibleMoves b x) $ getSide b s
+
+getSide b s = filter (\x-> side x == s) $ getPieces b
 
 nextBoards b s = map (uncurry $ move b) $ getMoves b s
 
+-- the hard part
+evaluateBoard :: Side -> Board -> Integer
+evaluateBoard s b = fromIntegral . length $ getSide b s 
 
+other White = Black
+other Black = White
