@@ -1,6 +1,8 @@
 import Data.Char
 import Data.Array
 import Data.Maybe
+import Data.List
+import Data.Ord
 
 type Pos = (Int, Int) 
 data PieceType = P | N | B | R | Q | K deriving (Show, Read, Eq, Ord)
@@ -10,16 +12,22 @@ type Board = Array Pos (Maybe Piece)
 
 main = do
     putStrLn "Let's play a game"
-    play White startBoard
+    humanMove White startBoard 
 
-play s b = do
+humanMove s b = do
     printBoard b
     putStrLn $ show s ++ " to move."
     let moves = getMoves b s
     mapM_ putStrLn [show n++". "++ agnMove (moves !! n) |n<-[0..length moves-1]]
     moveNumber <- getLine
     let newBoard = (uncurry $ move b) (moves !! read moveNumber)
-    play (other s) newBoard
+    aiMove (other s) newBoard 
+
+aiMove s b = do
+    putStrLn $ "\n Computer plays " ++ agnMove bestMove ++ ".\n"
+    humanMove (other s) $ uncurry (move b) bestMove
+    where
+    bestMove = maximumBy (comparing $ evaluateBoard s . uncurry (move b)) $ getMoves b s
 
 setup :: [Piece]
 setup = 
