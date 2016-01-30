@@ -9,6 +9,7 @@ data PieceType = P | N | B | R | Q | K deriving (Show, Read, Eq, Ord)
 data Side = Black | White deriving (Eq, Show)
 data Piece = Piece {side :: Side, ptype :: PieceType, pos :: Pos} deriving Show
 type Board = Array Pos (Maybe Piece) 
+type Move = (Piece, Pos)
 
 main = do
     putStrLn "Let's play a game"
@@ -27,7 +28,7 @@ aiMove s b = do
     putStrLn $ "\n Computer plays " ++ agnMove bestMove ++ ".\n"
     humanMove (other s) $ uncurry (move b) bestMove
     where
-    bestMove = maximumBy (comparing $ evaluateBoard s . uncurry (move b)) $ getMoves b s
+        bestMove = bestMoveBy evaluateBoard s b 
 
 setup :: [Piece]
 setup = 
@@ -145,8 +146,42 @@ getSide b s = filter (\x-> side x == s) $ getPieces b
 nextBoards b s = map (uncurry $ move b) $ getMoves b s
 
 -- the hard part
-evaluateBoard :: Side -> Board -> Integer
-evaluateBoard s b = fromIntegral . length $ getSide b s 
 
+type Evaluator = Side -> Board -> Int
+
+bestMoveBy :: Evaluator -> Side -> Board -> Move
+bestMoveBy eval s b = maximumBy (comparing $ eval s . uncurry (move b)) $ getMoves b s
+
+evaluateBoard :: Evaluator
+evaluateBoard = evalRecursive 3
+
+evalSimple s b = fromIntegral . length $ getSide b s 
+
+evalMaterial s b = 
+    sum . 
+    map (\(Piece s1 t _)->sign s s1 * value t) $ 
+    getPieces b
+    where 
+        sign me it = if it==me then 1 else (-1)
+
+evalRecursive 0 s b = evalMaterial s b
+evalRecursive n s b = 
+    evalRecursive (n-1) s $ 
+    uncurry (move b) $
+        bestMoveBy (evalRecursive $ n-1) s b 
+
+
+-- Misc
+ 
 other White = Black
 other Black = White
+
+value :: PieceType -> Int
+value t =   case t of
+                P -> 1 
+                N -> 3
+                B -> 3
+                R -> 5
+                Q -> 9
+                K -> 1000
+
