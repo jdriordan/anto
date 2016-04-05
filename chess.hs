@@ -22,7 +22,8 @@ humanMove s b = do
   printBoard b
   putStrLn $ show s ++ " to move."
   let moves = getMoves b s
-  mapM_ putStrLn [show n++". "++ agnMove move | move <- moves]
+-- mapM_ putStrLn [show n++". "++ agnMove move | move <- moves]
+  mapM_ putStrLn [show n++". "++ agnMove (moves !! n) |n<-[0..length moves-1]]
   moveNumber <- getLine
   return $ uncurry (move b) (moves !! read moveNumber)
 
