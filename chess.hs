@@ -15,6 +15,7 @@ main = do
     putStrLn "Let's play a game"
     humanMove White startBoard 
 
+humanMove :: Side -> Board -> IO b
 humanMove s b = do
     printBoard b
     putStrLn $ show s ++ " to move."
@@ -37,6 +38,7 @@ setup =
     zipWith (Piece Black) (map (\l->read[l]) "RNBKQBNR") [(i,1)|i<-[1..8]] ++
     zipWith (Piece White) (map (\l->read[l]) "RNBQKBNR") [(i,8)|i<-[1..8]]
 
+startBoard :: Board
 startBoard = boardUpdate blankBoard setup
      
 --instance Read Pos where
