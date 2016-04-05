@@ -3,6 +3,8 @@ import Data.Array
 import Data.Maybe
 import Data.List
 import Data.Ord
+
+import Control.Monad
 import Control.Monad.Loops
 
 type Pos = (Int, Int) 
