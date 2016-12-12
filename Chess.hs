@@ -58,7 +58,9 @@ legal board piece@(Piece s t (oldX,oldY)) newPos@(newX,newY)
     dX+dY/=0 -- no non-moves!
   &&
   case t of -- gotta move according to the rules
-    P -> dX==0 && oldY`pm`1==newY --TODO first move, en passant
+    P -> (dX==0           && forward 1 && not hitEnemy)  || -- normal move -- TODO allow promotion
+         (dX==1           && forward 1 &&     hitEnemy)  || -- kill
+         (oldY`elem`[2,7] && forward 2 && not hitEnemy)     -- first move --TODO allow en passant
     N -> (dX, dY) `elem`[(1,2),(2,1)]
     B -> dX==dY
     R -> dX==0 || dY==0
@@ -84,6 +86,8 @@ legal board piece@(Piece s t (oldX,oldY)) newPos@(newX,newY)
     hitEnemy =  case board!newPos of
       Nothing -> otherwise
       Just victim -> side victim /= s
+    forward n =
+      oldY`pm`n==newY
 
 
 
