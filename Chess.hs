@@ -1,16 +1,20 @@
 module Chess where
 
+import Debug.Trace
+
 import Data.Char
 import Data.Array
 import Data.Maybe
 import Data.List
 import Data.Ord
 
+import Text.Read
+
 import Control.Monad
 import Control.Monad.Loops
 
 type Pos = (Int, Int)
-data PieceType = P | N | B | R | Q | K deriving (Show, Read, Eq, Ord)
+data PieceType = P | N | B | R | Q | K deriving (Show, Read, Eq, Ord, Enum)
 data Side = Black | White deriving (Eq, Show)
 data Piece = Piece {side :: Side, ptype :: PieceType, pos :: Pos} deriving Show
 type Board = Array Pos (Maybe Piece)
@@ -44,12 +48,32 @@ setup =
 
 startBoard = boardUpdate blankBoard setup
 
-readPos [file,rank] = (ord file - 96, digitToInt rank)
+-- fromEnum 'a' = 97
+readPos [file,rank] = (readFile' file, digitToInt rank)
+readFile' file =   -- avoid conflict with Prelude.readFile
+    if file `elem` ['a'..'h'] then Just (ord file - 96) else Nothing
 showPos (x,y) = [chr (x+96), intToDigit y]
 
+agnMove :: Move -> String
 agnMove (Piece _ t _, pos) = (if t==P then "" else show t) ++ showPos pos
 
--- need to add special moves
+--parseMove :: [Char] -> Maybe Move
+
+-- return a function asking for a side and a position to constuct a move
+parseMove :: String -> Side -> Pos -> Maybe Move
+parseMove [pieceType,file,rank] side pos = do -- I am master of the maybe monad
+  p <- readMaybe $ return pieceType
+  f <- readFile' file
+  r <- readMaybe $ return rank
+  return (Piece side p pos,(f,r))
+
+parseMove' [pieceType,file,rank] = do -- I am master of the maybe monad
+  p <- readMaybe $ return pieceType
+  f <- readMaybe $ return file
+  r <- readMaybe $ return rank
+  return [p,f,r]
+
+--TODO need to add special moves
 legal :: Board -> Piece -> Pos -> Bool
 legal board piece@(Piece s t (oldX,oldY)) newPos@(newX,newY)
   =
@@ -89,8 +113,6 @@ legal board piece@(Piece s t (oldX,oldY)) newPos@(newX,newY)
     forward n =
       oldY`pm`n==newY
 
-
-
 move :: Board -> Piece -> Pos -> Board
 move board piece to =
   if legal board piece to then
@@ -107,6 +129,7 @@ swap (Piece s t p) t' = Piece s t' p
 
 wholeBoard = [(x,y) | x<-[1..8], y<-[1..8]]
 
+--TODO this is the slowest and most naive way to do this
 possibleMoves board piece = filter (legal board piece) wholeBoard
 
 blankBoard :: Board
@@ -172,7 +195,6 @@ evalMaterial s b =
     sign me it = if it==me then 1 else (-1)
 
 evalPredictive e s b = e s $ uncurry (move b) $ bestMoveBy e s b
-
 
 -- Misc
 
